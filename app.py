@@ -248,17 +248,35 @@ with tabs[1]:
         st.markdown("**야수 실책 기록 (출전 포지션별)**")
         st.dataframe(fielder_err.sort_values('PlayedPosition'), use_container_width=True)
 
+    # --- 오류 수정 부분 ---
     # 포수 지표 분석
     catchers = df_history[df_history['Role'] == '포수'].copy()
     if not catchers.empty:
+        # 데이터베이스의 영어 컬럼 이름을 사용하여 합계(sum) 계산
         c_agg = catchers.groupby(['PlayerName', 'AgeGroup']).agg({
-            'PassedBalls': 'sum', 'WildPitchesBlocked': 'sum', 'StealAttempts': 'sum', 'CaughtStealing': 'sum', 'ThrowingErrors': 'sum'
+            'PassedBalls': 'sum', 
+            'WildPitchesBlocked': 'sum', 
+            'StealAttempts': 'sum', 
+            'CaughtStealing': 'sum', 
+            'ThrowingErrors': 'sum'
         }).reset_index()
         
+        # 도루저지율 계산
         c_agg['도루저지율(%)'] = ((c_agg['CaughtStealing'] / c_agg['StealAttempts']) * 100).fillna(0).round(1)
         
         st.markdown("**포수 지표 요약**")
-        st.dataframe(c_agg[['PlayerName', 'AgeGroup', '포일(PB)', '블로킹 성공', '도루 허용', '도루 저지', '도루저지율(%)', '송구 실책']], use_container_width=True)
+        
+        # 화면에 표시할 때는 보기 좋게 한글 이름으로 표의 칸 제목을 변경(rename)
+        st.dataframe(
+            c_agg.rename(columns={
+                'PassedBalls': '포일(PB)',
+                'WildPitchesBlocked': '블로킹 성공',
+                'StealAttempts': '도루 허용',
+                'CaughtStealing': '도루 저지',
+                'ThrowingErrors': '송구 실책'
+            })[['PlayerName', 'AgeGroup', '포일(PB)', '블로킹 성공', '도루 허용', '도루 저지', '도루저지율(%)', '송구 실책']], 
+            use_container_width=True
+        )
 
 # ==========================================
 # 탭 3: 개인 프로필 (FM 스타일)
@@ -524,7 +542,6 @@ with tabs[3]:
             "MainPosition": st.column_config.SelectboxColumn("주 포지션", options=VALID_POSITIONS),
             "PlayedPosition": st.column_config.SelectboxColumn("출전 포지션", options=VALID_POSITIONS),
             "Role": st.column_config.SelectboxColumn("역할", options=["타자", "투수", "포수"]),
-            # Changed DateColumn to TextColumn to match the dataframe's string-type data, preventing type errors.
             "GameDate": st.column_config.TextColumn("경기 날짜", help="날짜 형식: YYYY-MM-DD")
         }
     )
